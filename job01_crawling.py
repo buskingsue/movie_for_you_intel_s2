@@ -39,7 +39,7 @@ for i in range(3):
     time.sleep(1)
 list_review_url = []
 movie_titles = []
-for i in range(1, 50):
+for i in range(1, 51):
     base = driver.find_element(By.XPATH, f'//*[@id="contents"]/div/div/div[3]/div[2]/div[{i}]/a').get_attribute("href")
     list_review_url.append(f"{base}/reviews")
     title = driver.find_element(By.XPATH, f'//*[@id="contents"]/div/div/div[3]/div[2]/div[{i}]/div/div[1]').text
@@ -49,12 +49,15 @@ print(list_review_url[:5])
 print(len(list_review_url))
 print(movie_titles[:5])
 print(len(movie_titles))
+
 reviews = []
-for url in list_review_url[:5]:
+for idx, url in enumerate(list_review_url[:51]):
+    print(movie_titles[idx])
     driver.get(url)
     time.sleep(0.5)
     review = ''
-    for i in range(1, 10):
+    for i in range(1, 31):
+
         review_title_xpath = '//*[@id="contents"]/div[2]/div[2]/div[{}]/div/div[3]/a[1]/div'.format(i)
         review_more_xpath = '//*[@id="contents"]/div[2]/div[2]/div[{}]/div/div[3]/div/button'.format(i)
         try:
@@ -65,14 +68,26 @@ for url in list_review_url[:5]:
             review = review + ' ' + driver.find_element(By.XPATH, review_xpath).text
             driver.back()
             time.sleep(1)
-        except:
-            review = review + ' ' + driver.find_element(By.XPATH, review_title_xpath).text
+            error_count = 0
+        except NoSuchElementException as e:
+            print('더보기')
+            try:
+                review = review + ' ' + driver.find_element(By.XPATH, review_title_xpath).text
+            except:
+                print('review title error')
+        except StaleElementReferenceException as e:
+            print('stale')
 
+        except Exception as e:
+            print('error', e)
     print(review)
     reviews.append(review)
-print(reviews[:5])
+# print(reviews[:5])
 print(len(reviews))
 
+df = pd.DataFrame({'titles':movie_titles[0:51], 'reviews':reviews})
+today = datetime.datetime.now().strftime('%Y%m%d')
+df.to_csv('./crawling_data/reviews_350.csv'.format(today), index=False)
 
 
 
