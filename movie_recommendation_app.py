@@ -74,7 +74,7 @@ class Exam(QWidget, form_window):
         return recommendation
 
     def recommendation_by_movie_title(self, title):
-        movie_idx = self.df_reviews[self.df_reviews['titles'] == title].index[0]
+        movie_idx = self.df_reviews[self.df_reviews['movie_title'] == title].index[0]
         cosine_sim = linear_kernel(self.Tfidf_matrix[movie_idx], self.Tfidf_matrix)
         recommendation = self.getRecommendation(cosine_sim)
         recommendation = '\n'.join(list(recommendation))
