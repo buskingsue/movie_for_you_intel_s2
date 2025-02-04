@@ -11,7 +11,7 @@ stopwords = stopwords + ['영화', '감독', '연출', '배우', '연기', '작�
                          '관객', '장면', '모르다']
 okt = Okt()
 cleaned_sentences = []
-for review in df.reviews:
+for review in df.review:
     review = re.sub('[^가-힣]', ' ', review)
     tokened_review = okt.pos(review, stem=True)
     print(tokened_review)

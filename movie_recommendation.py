@@ -13,7 +13,7 @@ def getRecommendation(cosine_sim):
     recmovieList = df_reviews.iloc[movieIdx, 0]
     return recmovieList[1:11]
 
-df_reviews = pd.read_csv('./cleaned_one_review.csv')
+df_reviews = pd.read_csv('./cleaned_reviews.csv')
 Tfidf_matrix = mmread('./models/Tfidf_movie_review.mtx').tocsr()
 with open('./models/tfidf.pickle', 'rb') as f:
     Tfidf = pickle.load(f)
@@ -30,7 +30,7 @@ with open('./models/tfidf.pickle', 'rb') as f:
 # keyword 이용
 
 embedding_model = Word2Vec.load('./models/word2vec_movie_review.model')
-keyword = '드래곤'
+keyword = '사랑'
 sim_word = embedding_model.wv.most_similar(keyword, topn=10)
 words = [keyword]
 for word, _ in sim_word:

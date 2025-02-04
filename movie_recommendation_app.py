@@ -18,8 +18,8 @@ class Exam(QWidget, form_window):
         with open('./models/tfidf.pickle', 'rb') as f:
             self.Tfidf = pickle.load(f)
         self.embedding_model = Word2Vec.load('./models/word2vec_movie_review.model')
-        self.df_reviews = pd.read_csv('./cleaned_one_review.csv')
-        self.titles = list(self.df_reviews['titles'])
+        self.df_reviews = pd.read_csv('./cleaned_reviews.csv')
+        self.titles = list(self.df_reviews['movie_title'])
         self.titles.sort()
         for title in self.titles:
             self.comboBox.addItem(title)

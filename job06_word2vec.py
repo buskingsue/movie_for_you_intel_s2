@@ -1,7 +1,7 @@
 import pandas as pd
 from gensim.models import Word2Vec
 
-df_review = pd.read_csv('./cleaned_one_review.csv')
+df_review = pd.read_csv('./cleaned_reviews.csv')
 df_review.info()
 
 reviews = list(df_review['reviews'])
