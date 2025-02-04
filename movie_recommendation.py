@@ -1,3 +1,10 @@
+# 이 방식은 콘텐츠 기반 필터링(Content-Based Filtering) 기법을 사용하며,
+# 키워드를 중심으로 유사한 영화 리뷰를 찾아 추천하는 방식이다.
+# TF-IDF 모델을 활용한 영화 리뷰 벡터화
+# Word2Vec 모델을 이용해 키워드와 유사한 단어 확장
+# 확장된 키워드를 기반으로 문장을 생성 후 TF-IDF 벡터 변환
+# 코사인 유사도를 계산하여 가장 유사한 영화 10개 추천
+
 import pandas as pd
 from sklearn.metrics.pairwise import linear_kernel
 from scipy.io import mmread
