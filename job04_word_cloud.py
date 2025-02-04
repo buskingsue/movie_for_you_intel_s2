@@ -9,7 +9,7 @@ font_name = font_manager.FontProperties(fname=font_path).get_name()
 plt.rc('font', family='NanumBarunGothic')
 
 df = pd.read_csv('D:/movie_for_you_intel_s2/cleaned_reviews.csv')
-words = df.iloc[1431, 1].split()
+words = df.iloc[111, 1].split() #999번째 영화
 print(words)
 
 worddict = collections.Counter(words)
