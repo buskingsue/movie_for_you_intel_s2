@@ -33,7 +33,8 @@ class Exam(QWidget, form_window):
 
         self.comboBox.currentIndexChanged.connect(self.combobox_slot)
         self.btn_recommendation.clicked.connect(self.btn_slot)
-
+        self.le_keyword.returnPressed.connect(self.btn_slot)  # Enter 키를 누르면 btn_slot 실행
+        #enter 키를 누르면 추천 버튼이 눌러짐
     def btn_slot(self):
         key_word = self.le_keyword.text()
         if key_word in self.titles:
@@ -55,7 +56,7 @@ class Exam(QWidget, form_window):
         try:
             sim_word = self.embedding_model.wv.most_similar(key_word, topn=10)
         except:
-            self.lbl_recommendation.setText('제가 모르는 단어에요 ㅠㅠ')
+            self.lbl_recommendation.setText('제가 모르는 단어에요 ㅎㅎ')
             return 0
         words = [key_word]
         for word, _ in sim_word:
