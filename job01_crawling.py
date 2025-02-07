@@ -1,121 +1,190 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.alert import Alert
+from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
-import pandas as pd
-import re
 import time
-import datetime
+import pandas as pd
+import os
 
+# Chrome 옵션 설정
 options = ChromeOptions()
-user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-options.add_argument('user-agent=' + user_agent)
-options.add_argument("lang=ko_KR")
-# options.add_argument('headless')
-# options.add_argument('window-size=1920X1080')
+options.add_argument(
+    'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36')
+options.add_argument('--disable-blink-features=AutomationControlled')
+options.add_argument('--disable-extensions')
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
 
-service = ChromeService(executable_path=ChromeDriverManager().install())
-driver = webdriver.Chrome(service=service, options=options)
+options.add_experimental_option("prefs", {
+    "profile.default_content_setting_values.notifications": 1,
+    "profile.default_content_setting_values.geolocation": 1,
+    "profile.default_content_setting_values.media_stream_mic": 1,
+    "profile.default_content_setting_values.media_stream_camera": 1,
+})
 
-start_url = 'https://m.kinolights.com/discover/explore'
-button_movie_tv_xpath = '//*[@id="contents"]/section/div[3]/div/div/div[3]/button'
-button_movie_xpath = '//*[@id="contents"]/section/div[4]/div[2]/div[1]/div[3]/div[2]/div[2]/div/button[1]'
-button_ok_xpath = '//*[@id="applyFilterButton"]'
-driver.get(start_url)
-time.sleep(0.5)
-button_movie_tv = driver.find_element(By.XPATH, button_movie_tv_xpath)
-driver.execute_script('arguments[0].click();', button_movie_tv)
-time.sleep(0.5)
-button_movie = driver.find_element(By.XPATH, button_movie_xpath)
-driver.execute_script('arguments[0].click();', button_movie)
-time.sleep(1)
-button_ok = driver.find_element(By.XPATH, button_ok_xpath)
-driver.execute_script('arguments[0].click();', button_ok)
-for i in range(3):
-    driver.execute_script("window.scrollTo(0, document.documentElement.scrollHeight);")
-    time.sleep(1)
-list_review_url = []
-movie_titles = []
-for i in range(1, 51):
-    base = driver.find_element(By.XPATH, f'//*[@id="contents"]/div/div/div[3]/div[2]/div[{i}]/a').get_attribute("href")
-    list_review_url.append(f"{base}/reviews")
-    title = driver.find_element(By.XPATH, f'//*[@id="contents"]/div/div/div[3]/div[2]/div[{i}]/div/div[1]').text
-    movie_titles.append(title)
+os.makedirs('./crawling_data', exist_ok=True)
+total_movies_df = pd.DataFrame(columns=['title'])
+total_reviews_df = pd.DataFrame(columns=['movie_title', 'review'])
 
-print(list_review_url[:5])
-print(len(list_review_url))
-print(movie_titles[:5])
-print(len(movie_titles))
 
-reviews = []
-for idx, url in enumerate(list_review_url[:51]):
-    print(movie_titles[idx])
-    driver.get(url)
-    time.sleep(0.5)
-    review = ''
-    for i in range(1, 31):
+def scroll_explore_page(driver):
+    """영화 선택 페이지에서 스크롤 다운"""
+    try:
+        last_height = driver.execute_script("return document.documentElement.scrollHeight")
+        driver.execute_script(f"window.scrollTo(0, {last_height});")
+        time.sleep(3)
 
-        review_title_xpath = '//*[@id="contents"]/div[2]/div[2]/div[{}]/div/div[3]/a[1]/div'.format(i)
-        review_more_xpath = '//*[@id="contents"]/div[2]/div[2]/div[{}]/div/div[3]/div/button'.format(i)
+        new_height = driver.execute_script("return document.documentElement.scrollHeight")
+        if new_height > last_height:
+            print("새로운 컨텐츠 로드됨")
+        print("영화 선택 페이지 스크롤 완료")
+    except Exception as e:
+        print(f"스크롤 중 오류 발생: {e}")
+
+
+def click_review_tab(driver, wait):
+    """리뷰 탭 클릭 함수"""
+    try:
+        review_tab = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="review"]/span[1]')))
+        driver.execute_script("arguments[0].scrollIntoView(true);", review_tab)
+        time.sleep(2)
+        driver.execute_script("arguments[0].click();", review_tab)
+        time.sleep(2)
+        return True
+    except Exception as e:
+        print(f"리뷰 탭 클릭 실패: {e}")
+        return False
+
+
+def collect_reviews(driver, max_count=100):
+    reviews = []
+    collected_count = 0
+    no_new_reviews_count = 0
+    last_reviews_count = 0
+
+    while collected_count < max_count:
         try:
-            review_more = driver.find_element(By.XPATH, review_more_xpath)
-            driver.execute_script('arguments[0].click();', review_more)
-            time.sleep(1)
-            review_xpath = '//*[@id="contents"]/div[2]/div[1]/div/section[2]/div/div'
-            review = review + ' ' + driver.find_element(By.XPATH, review_xpath).text
-            driver.back()
-            time.sleep(1)
-            error_count = 0
-        except NoSuchElementException as e:
-            print('더보기')
+            container = driver.find_element(By.XPATH, '//*[@id="content__body"]')
+            for _ in range(2):
+                driver.execute_script(
+                    "arguments[0].scrollTop = arguments[0].scrollTop + arguments[0].offsetHeight;",
+                    container
+                )
+                time.sleep(2)
+        except Exception:
+            for _ in range(2):
+                driver.execute_script("window.scrollBy(0, window.innerHeight/3);")
+                time.sleep(2)
+
+        review_elements = driver.find_elements(By.XPATH,
+                                               '//*[@id="contents"]/div[5]/section[2]/div/article/div[3]/a/h5')
+
+        for element in review_elements:
+            review_text = element.text.strip()
+            if review_text and review_text not in reviews and len(reviews) < max_count:
+                reviews.append(review_text)
+                collected_count = len(reviews)
+                print(f"리뷰 {collected_count} 수집 완료")
+
+        if len(reviews) == last_reviews_count:
+            no_new_reviews_count += 1
+        else:
+            no_new_reviews_count = 0
+            last_reviews_count = len(reviews)
+
+        if no_new_reviews_count >= 3 or len(review_elements) == 0:
+            print(f"총 {len(reviews)}개의 리뷰를 수집했습니다. 더 이상의 리뷰를 찾을 수 없어 다음 영화로 넘어갑니다.")
+            break
+
+    return reviews
+
+
+def crawl_movies(num_movies=20):
+    global total_movies_df, total_reviews_df
+
+    service = ChromeService(executable_path=ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
+    wait = WebDriverWait(driver, 10)
+    SCROLLABLE_CONTAINER_XPATH = '//*[@id="content__body"]'
+
+    try:
+        url = "https://m.kinolights.com/discover/explore"
+        driver.get(url)
+        time.sleep(5)
+
+        def click_certification_and_sort():
             try:
-                review = review + ' ' + driver.find_element(By.XPATH, review_title_xpath).text
-            except:
-                print('review title error')
-        except StaleElementReferenceException as e:
-            print('stale')
+                # 인증작품 버튼 클릭
+                cert_button = wait.until(EC.presence_of_element_located(
+                    (By.XPATH, '//*[@id="contents"]/section/div[3]/div/div/div[1]/div/button[1]/span[1]')))
+                driver.execute_script("arguments[0].click();", cert_button)
+                time.sleep(2)
+                print("인증작품 필터 적용 완료")
 
-        except Exception as e:
-            print('error', e)
-    print(review)
-    reviews.append(review)
-# print(reviews[:5])
-print(len(reviews))
+                # 평점 높은 순 버튼 클릭
+                sort_button = wait.until(EC.presence_of_element_located(
+                    (By.XPATH, '//*[@id="contents"]/div/div/div[3]/div[1]/div/button[1]')))
+                driver.execute_script("arguments[0].click();", sort_button)
+                time.sleep(2)
+                print("평점 높은 순 정렬 완료")
+            except Exception as e:
+                print(f"필터/정렬 버튼 클릭 실패: {e}")
 
-df = pd.DataFrame({'titles':movie_titles[0:51], 'reviews':reviews})
-today = datetime.datetime.now().strftime('%Y%m%d')
-df.to_csv('./crawling_data/reviews_350.csv'.format(today), index=False)
+        # 최초 진입시 필터/정렬 적용
+        click_certification_and_sort()
+
+        for i in range(1, num_movies + 1):
+            try:
+                if i > 1:
+                    driver.get(url)
+                    time.sleep(5)
+                    click_certification_and_sort()
+
+                # 영화 이미지 클릭
+                movie_xpath = f'//*[@id="contents"]/div/div/div[3]/div[2]/div[{i}]'
+                movie_element = wait.until(EC.presence_of_element_located((By.XPATH, movie_xpath)))
+                movie_element.click()
+                time.sleep(5)
+
+                # 영화 제목 가져오기
+                movie_title_element = wait.until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="contents"]/div[1]/div[2]/div[1]/div[1]/h2')))
+                movie_title = movie_title_element.text
+                print(f"{i}번째 영화 제목: {movie_title}")
+
+                if not click_review_tab(driver, wait):
+                    continue
+
+                reviews = collect_reviews(driver, 100)
+
+                movies_df = pd.DataFrame({'title': [movie_title]})
+                reviews_df = pd.DataFrame({'movie_title': [movie_title] * len(reviews), 'review': reviews})
+
+                total_movies_df = pd.concat([total_movies_df, movies_df], ignore_index=True)
+                total_reviews_df = pd.concat([total_reviews_df, reviews_df], ignore_index=True)
+
+            except Exception as movie_error:
+                print(f"{i}번째 영화 크롤링 중 오류: {movie_error}")
+                continue
+
+        driver.get(url)
+        time.sleep(5)
+        scroll_explore_page(driver)
+
+    except Exception as e:
+        print(f"크롤링 중 전체 오류 발생: {e}")
+
+    finally:
+        total_movies_df.to_csv('./crawling_data/movies.csv', index=False, encoding='utf-8-sig')
+        total_reviews_df.to_csv('./crawling_data/reviews_1.csv', index=False, encoding='utf-8-sig')
+        print("크롤링 완료! CSV 파일 저장됨.")
+        driver.quit()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    crawl_movies(20)

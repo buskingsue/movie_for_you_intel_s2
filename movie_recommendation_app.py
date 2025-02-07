@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.metrics.pairwise import linear_kernel
 from gensim.models import Word2Vec
 from scipy.io import mmread
-import pickle
+import pickle #파일 이름과 임포트 패키지 이름이 같으면 안됨
 from PyQt5.QtCore import QStringListModel
 
 form_window = uic.loadUiType('./movie_recommendation.ui')[0]
@@ -15,7 +15,7 @@ class Exam(QWidget, form_window):
         super().__init__()
         self.setupUi(self)
         self.Tfidf_matrix = mmread('./models/Tfidf_movie_review.mtx').tocsr()
-        with open('./models/tfidf.pickle', 'rb') as f:
+        with open('./models/tfidf_vectorizer.pkl', 'rb') as f:
             self.Tfidf = pickle.load(f)
         self.embedding_model = Word2Vec.load('./models/word2vec_movie_review.model')
         self.df_reviews = pd.read_csv('./cleaned_reviews.csv')
