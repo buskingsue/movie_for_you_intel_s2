@@ -5,3 +5,5 @@
 
 ## tf와 df의 차이를 알려줘
 ## TF (단어 빈도)	DF (문서 빈도)
+##
+## pip freeze > requirements.txt
