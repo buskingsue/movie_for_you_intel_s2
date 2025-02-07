@@ -15,7 +15,7 @@ print(tokens[0])
 
 embedding_model = Word2Vec(tokens, vector_size=100, window=4,
             min_count=20, workers=4, epochs=100, sg=1)
-# Word2Vec 모델을 학습
+# Word2Vec 모델을 학습 의미(meaning) 학습
 # tokens: 학습할 문장 리스트
 # vector_size=100: 단어 임베딩 차원을 100으로 설정
 # window=4: 한 단어를 중심으로 좌우 4개의 단어까지 고려
@@ -23,6 +23,10 @@ embedding_model = Word2Vec(tokens, vector_size=100, window=4,
 # workers=4: CPU 코어 4개 사용
 # epochs=100: 100번 반복 학습
 # sg=1: Skip-gram 방식 사용 (0이면 CBOW)
+# Skip-gram 모델이란?
+# Skip-gram은 Word2Vec 모델의 한 방식으로,
+# "주어진 단어(중심 단어)로부터 주변 단어를 예측" 하는 방식입니다.
+# (CBOW는 그 반대로 "주변 단어로 중심 단어를 예측" 합니다.)
 embedding_model.save('./models/word2vec_movie_review.model')
 print(list(embedding_model.wv.index_to_key))
 print(len(embedding_model.wv.index_to_key))

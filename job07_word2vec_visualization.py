@@ -52,7 +52,7 @@ print(df_xy)
 print(df_xy.shape)
 
 plt.figure(figsize=(8, 8))
-plt.scatter(0, 0, s=1500, marker='*')
+plt.scatter(0, 0, s=1500, marker='D')
 
 for i in range(len(df_xy)):
     a = df_xy.loc[[i, 10]]
