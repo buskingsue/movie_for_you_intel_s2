@@ -1,3 +1,4 @@
+#1. 패키지 및 모듈 불러오기
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
@@ -8,9 +9,13 @@ from scipy.io import mmread
 import pickle #파일 이름과 임포트 패키지 이름이 같으면 안됨
 from PyQt5.QtCore import QStringListModel
 
+#2. UI 파일 로드
 form_window = uic.loadUiType('./movie_recommendation.ui')[0]
 
+#3. GUI 클래스 정의
 class Exam(QWidget, form_window):
+
+#4. 클래스 생성자 (__init__)
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -24,17 +29,19 @@ class Exam(QWidget, form_window):
         for title in self.titles:
             self.comboBox.addItem(title)
 
+#5. 자동완성 기능 추가
         model = QStringListModel()
         model.setStringList(self.titles)
         completer = QCompleter()
         completer.setModel(model)
         self.le_keyword.setCompleter(completer)
 
-
+#6. 이벤트 핸들러 연결
         self.comboBox.currentIndexChanged.connect(self.combobox_slot)
         self.btn_recommendation.clicked.connect(self.btn_slot)
         self.le_keyword.returnPressed.connect(self.btn_slot)  # Enter 키를 누르면 btn_slot 실행
         #enter 키를 누르면 추천 버튼이 눌러짐
+#7. 버튼 클릭 시 동작
     def btn_slot(self):
         key_word = self.le_keyword.text()
         if key_word in self.titles:
@@ -44,6 +51,7 @@ class Exam(QWidget, form_window):
         if recommendation:
             self.lbl_recommendation.setText(recommendation)
 
+#8. 콤보박스 선택 시 동작
     def combobox_slot(self):
         title = self.comboBox.currentText()
         print(title)
@@ -52,6 +60,7 @@ class Exam(QWidget, form_window):
         self.lbl_recommendation.setText(recommendation)
         print('debug02')
 
+#9. 키워드 기반 추천
     def recommendation_by_keyword(self, key_word):
         try:
             sim_word = self.embedding_model.wv.most_similar(key_word, topn=10)
@@ -74,6 +83,7 @@ class Exam(QWidget, form_window):
         recommendation = '\n'.join(list(recommendation))
         return recommendation
 
+#10. 영화 제목 기반 추천
     def recommendation_by_movie_title(self, title):
         movie_idx = self.df_reviews[self.df_reviews['movie_title'] == title].index[0]
         cosine_sim = linear_kernel(self.Tfidf_matrix[movie_idx], self.Tfidf_matrix)
@@ -81,6 +91,7 @@ class Exam(QWidget, form_window):
         recommendation = '\n'.join(list(recommendation))
         return recommendation
 
+#11. 추천 영화 리스트 반환
     def getRecommendation(self, cosine_sim):
         simScore = list(enumerate(cosine_sim[-1]))
         simScore = sorted(simScore, key=lambda x: x[1], reverse=True)
@@ -89,6 +100,7 @@ class Exam(QWidget, form_window):
         recmovieList = self.df_reviews.iloc[movieIdx, 0]
         return recmovieList[1:11]
 
+#12. GUI app 실행 코드
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     mainWindow = Exam()
