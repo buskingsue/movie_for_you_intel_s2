@@ -4,7 +4,7 @@ from gensim.models import Word2Vec
 df_review = pd.read_csv('./cleaned_reviews.csv')
 df_review.info()
 
-reviews = list(df_review['reviews'])
+reviews = list(df_review.reviews) #코드 수정 리스트에서 .reviews로 바꿈
 print(reviews[0])
 
 tokens = []
