@@ -7,3 +7,18 @@
 ## TF (단어 빈도)	DF (문서 빈도)
 ##
 ## pip freeze > requirements.txt
+##
+# 프로젝트 설정
+
+## Python 버전
+- Python : 3.10
+
+## 디렉토리 구조
+```
+root
+│── crawling_data
+│── models
+```
+
+## 폰트 설정
+- Font : Malgun
